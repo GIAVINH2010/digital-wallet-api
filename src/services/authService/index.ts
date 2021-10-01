@@ -7,6 +7,7 @@ import WalletModel from "../../core/utils/database/schemas/walletSchema";
 import CurrencyModel from "../../core/utils/database/schemas/currencySchema";
 
 import { LoginPayload, RegisterPayload } from "./types";
+import { CustomError } from "../../core/utils/customError";
 
 const jwtSecretKey = process.env.JWT_SECRET_KEY || "tuheumapdit";
 
@@ -19,7 +20,7 @@ const register = async (payload: RegisterPayload) => {
   const foundAccount: any = await AccountModel.findOne({ username });
 
   if (foundAccount) {
-    throw new Error("USERNAME_ALREADY_EXIST");
+    throw new CustomError(400, "USERNAME_ALREADY_EXIST");
   }
 
   const session = await mongoose.startSession();
@@ -39,7 +40,7 @@ const register = async (payload: RegisterPayload) => {
       const currencies = await CurrencyModel.find().session(session);
 
       if (!currencies.length) {
-        throw new Error("currencies empty");
+        throw new CustomError(400, "CANNOT_REGISTER");
       }
 
       const wallet = new WalletModel({
@@ -56,7 +57,8 @@ const register = async (payload: RegisterPayload) => {
 
     await session.commitTransaction();
     session.endSession();
-    return { message: "REGISTER_SUCCESSFULLY" };
+
+    return true;
   } catch (error) {
     // If an error occurred, abort the whole transaction and
     // undo any changes that might have happened
@@ -81,13 +83,10 @@ const login = async (payload: LoginPayload) => {
 
     if (isCorrectPassword) {
       const token = jwt.sign({ accountId }, jwtSecretKey);
-
-      return { message: "LOGIN_SUCCESSFULLY", token };
-    } else {
-      return { message: "INCORRECT_EMAIL_OR_PASSWORD", token: null };
+      return token;
     }
   }
-  throw new Error("INCORRECT_EMAIL_OR_PASSWORD");
+  throw new CustomError(400, "INCORRECT_EMAIL_OR_PASSWORD");
 };
 
 export default { login, register };
