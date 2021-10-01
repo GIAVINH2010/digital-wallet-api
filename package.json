@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "build": "rimraf dist && tsc && cp .env.testing .env",
     "dev": "ts-node-dev --respawn --pretty --transpile-only src/index.ts",
     "start": "node dist/index.js"
   },
