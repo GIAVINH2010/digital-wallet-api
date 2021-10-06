@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
 
 export interface Currency {
+  _id: string;
   name: string;
   exchangeRate: number;
 }

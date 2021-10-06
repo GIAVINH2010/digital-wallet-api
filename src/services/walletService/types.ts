@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 export interface FundPayload {
   fromAdr: number;
   toAdr: number;
-  currency: string;
+  currencyId: string;
   amount: number;
 }
 export interface Asset {

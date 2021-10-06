@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-// import bodyParser from "body-parser";
 
 import { initDBConnection } from "./core/utils/database";
 import seeding from "./core/utils/database/seed";
@@ -20,8 +19,6 @@ const app = express();
 
 app.use(helmet());
 app.use(cors());
-// app.use(bodyParser.urlencoded({ extended: false }));
-// app.use(bodyParser.json());
 app.use(express.json());
 
 //Set all routes from routes folder

@@ -1,6 +1,7 @@
 import WalletModel from "../../core/utils/database/schemas/walletSchema";
 import { FundPayload, Asset, Wallet } from "./types";
 import mongoose from "mongoose";
+import { CustomError } from "../../core/utils/customError";
 
 const getWalletByAccountId = async (accountId) => {
   const foundWallet = await WalletModel.findOne({
@@ -13,7 +14,7 @@ const getWalletByAccountId = async (accountId) => {
 };
 
 const sendFund = async (payload: FundPayload) => {
-  const { fromAdr, toAdr, currency, amount } = payload;
+  const { fromAdr, toAdr, currencyId, amount } = payload;
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -23,28 +24,21 @@ const sendFund = async (payload: FundPayload) => {
       path: "assets",
       populate: { path: "currency" },
     });
-    console.log(
-      "🚀 ~ file: index.ts ~ line 21 ~ sendFund ~ remitter",
-      remitter
-    );
 
     if (!remitter) {
-      throw new Error("remitter not found");
+      throw new Error("REMITTER_NOT_FOUND");
     }
 
     const remitterAssetIdx = remitter.assets.findIndex(
-      (asset) => asset.currency.name === currency
+      (asset) => String(asset.currency._id) === currencyId
     );
 
     if (remitter.assets[remitterAssetIdx].balance < amount) {
-      throw new Error("balance < amount");
+      throw new Error("NOT_ENOUGH_BALANCE");
     }
 
     remitter.assets[remitterAssetIdx].balance -= amount;
-    console.log(
-      "🚀 ~ file: index.ts ~ line 41 ~ sendFund ~ remitter",
-      remitter
-    );
+
     const remitterResult = await remitter.save({ session: session });
     console.log(
       "🚀 ~ file: index.ts ~ line 49 ~ sendFund ~ remitterResult",
@@ -57,17 +51,13 @@ const sendFund = async (payload: FundPayload) => {
       path: "assets",
       populate: { path: "currency" },
     });
-    console.log(
-      "🚀 ~ file: index.ts ~ line 50 ~ sendFund ~ beneficiary",
-      beneficiary
-    );
 
     if (!beneficiary) {
-      throw new Error("beneficiary not found");
+      throw new Error("BENEFICIARY_NOT_FOUND");
     }
 
     const beneficiaryAssetIdx = beneficiary.assets.findIndex(
-      (asset) => asset.currency.name === currency
+      (asset) => String(asset.currency._id) === currencyId
     );
 
     beneficiary.assets[beneficiaryAssetIdx].balance += amount;
@@ -82,11 +72,12 @@ const sendFund = async (payload: FundPayload) => {
     session.endSession();
     return { message: "SEND_FUND_SUCCESSFULLY" };
   } catch (error) {
+    const { message } = error;
     // If an error occurred, abort the whole transaction and
     // undo any changes that might have happened
     await session.abortTransaction();
     session.endSession();
-    throw error; // Rethrow so calling function sees error
+    throw new CustomError(400, message); // Rethrow so calling function sees error
   }
 };
 export default { getWalletByAccountId, sendFund };
